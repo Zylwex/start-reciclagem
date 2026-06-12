@@ -1,0 +1,25 @@
+EVIDÊNCIA DE DADOS (BANCO DE DADOS)
+
+O sistema utiliza SQLite como banco de dados local.
+
+Arquivo utilizado:
+
+database/start.db
+
+Foram implementadas estruturas para armazenamento de usuários, produtos e movimentações de estoque.
+
+As imagens anexadas demonstram a estrutura das tabelas e os registros armazenados, comprovando que as informações são persistidas corretamente pelo sistema.
+
+Tecnologias utilizadas:
+
+* SQLite
+* Python
+* Flask
+
+Tabelas principais:
+
+* users
+* products
+* movements
+
+As evidências apresentadas comprovam a gravação e manipulação de dados realizada pela aplicação.
