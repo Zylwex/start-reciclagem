@@ -58,6 +58,13 @@ def init_db():
         created_by INTEGER
     );
 
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        created_by INTEGER,
+        created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS movements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER,
@@ -75,6 +82,7 @@ def init_db():
         user_id INTEGER,
         content TEXT,
         image TEXT,
+        post_type TEXT DEFAULT 'post',
         likes INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY(user_id) REFERENCES users(id)
@@ -124,11 +132,38 @@ def init_db():
         user_id INTEGER,
         created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS kanban_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'todo',
+        priority TEXT DEFAULT 'media',
+        assignee TEXT,
+        due_date TEXT,
+        labels TEXT DEFAULT '',
+        position INTEGER DEFAULT 0,
+        created_by INTEGER,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+    );
     ''')
 
     # Backward-compat: add 'version' column if upgrading an older db
     try:
         c.execute("ALTER TABLE terms_acceptance ADD COLUMN version TEXT DEFAULT '1.0'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT 'post'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE kanban_tasks ADD COLUMN due_date TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE kanban_tasks ADD COLUMN labels TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
 
@@ -150,6 +185,16 @@ def init_db():
         ]
         c.executemany("""INSERT INTO products (name,sku,category,quantity,min_quantity,location,observations,created_by)
                          VALUES (?,?,?,?,?,?,?,1)""", samples)
+
+    conn.commit()
+
+    # Seed default categories (idempotent, independent of admin seed)
+    default_categories = ['Papel', 'Plástico', 'Metal', 'Vidro', 'Madeira', 'Borracha', 'Eletrônico']
+    for cat in default_categories:
+        try:
+            c.execute("INSERT INTO categories (name) VALUES (?)", (cat,))
+        except sqlite3.IntegrityError:
+            pass
 
     conn.commit()
     conn.close()
@@ -309,11 +354,47 @@ def delete_product(pid):
     conn.close()
     return jsonify({'success': True})
 
+@app.route('/api/categories', methods=['GET'])
+@login_required
+def list_categories():
+    conn = get_db()
+    rows = conn.execute("SELECT name FROM categories ORDER BY name").fetchall()
+    # Also include any category already in use on a product but not yet in
+    # the categories table (defensive, for older/imported data).
+    used = conn.execute("""SELECT DISTINCT category FROM products
+                            WHERE category IS NOT NULL AND category != ''""").fetchall()
+    conn.close()
+    names = {r['name'] for r in rows}
+    for r in used:
+        if r['category'] and r['category'] not in names:
+            names.add(r['category'])
+    return jsonify(sorted(names, key=lambda s: s.lower()))
+
+
+@app.route('/api/categories', methods=['POST'])
+@login_required
+def create_category():
+    d = request.json
+    name = (d.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Informe um nome para a categoria'}), 400
+    if len(name) > 40:
+        return jsonify({'error': 'Nome muito longo (máx. 40 caracteres)'}), 400
+    conn = get_db()
+    try:
+        conn.execute("INSERT INTO categories (name, created_by) VALUES (?,?)", (name, session['user_id']))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # category already exists — treat as success (idempotent)
+    conn.close()
+    return jsonify({'success': True, 'name': name})
+
+
 @app.route('/api/products/generate-sku', methods=['POST'])
 @login_required
 def gen_sku():
     d = request.json
-    cat = d.get('category', 'PRD')[:3].upper()
+    cat = (d.get('category') or 'PRD')[:3].upper()
     conn = get_db()
     count = conn.execute("SELECT COUNT(*) FROM products WHERE category=?", (d.get('category',''),)).fetchone()[0]
     conn.close()
@@ -407,8 +488,8 @@ def get_posts():
 def create_post():
     d = request.json
     conn = get_db()
-    conn.execute("INSERT INTO posts (user_id,content,image) VALUES (?,?,?)",
-                 (session['user_id'], d['content'], d.get('image','')))
+    conn.execute("INSERT INTO posts (user_id,content,image,post_type) VALUES (?,?,?,?)",
+                 (session['user_id'], d['content'], d.get('image',''), d.get('post_type','post')))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -460,6 +541,13 @@ def dashboard_stats():
     notifs_unread = conn.execute(
         "SELECT COUNT(*) FROM notifications WHERE user_id=? AND read=0",
         (session['user_id'],)).fetchone()[0]
+    # Products with zero movements ever registered
+    no_movement = conn.execute("""
+        SELECT COUNT(*) FROM products p
+        WHERE NOT EXISTS (SELECT 1 FROM movements m WHERE m.product_id=p.id)
+    """).fetchone()[0]
+    # Critical alerts: zeroed-out stock items
+    critical = conn.execute("SELECT COUNT(*) FROM products WHERE quantity<=0").fetchone()[0]
     # Category distribution
     cats = conn.execute("""SELECT category, SUM(quantity) as total
                            FROM products GROUP BY category ORDER BY total DESC""").fetchall()
@@ -473,6 +561,8 @@ def dashboard_stats():
         'low_stock': low,
         'total_kg': round(total_kg, 2),
         'movements_today': movements_today,
+        'no_movement_products': no_movement,
+        'critical_alerts': critical,
         'unread_notifications': notifs_unread,
         'categories': [dict(r) for r in cats],
         'recent_movements': [dict(r) for r in recent]
@@ -662,6 +752,108 @@ def chart_edits_log():
                             ORDER BY ce.created_at DESC LIMIT 50""").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
+
+
+# ─────────────────────────────────────────────────────────
+#  KANBAN
+# ─────────────────────────────────────────────────────────
+KANBAN_STATUSES = {'todo', 'doing', 'review', 'done'}
+
+@app.route('/api/kanban/tasks', methods=['GET'])
+@login_required
+def kanban_list():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY status, position, id").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/kanban/tasks', methods=['POST'])
+@login_required
+def kanban_create():
+    d = request.json
+    status = d.get('status', 'todo')
+    if status not in KANBAN_STATUSES:
+        status = 'todo'
+    conn = get_db()
+    max_pos = conn.execute("SELECT COALESCE(MAX(position),-1) FROM kanban_tasks WHERE status=?", (status,)).fetchone()[0]
+    cur = conn.execute("""INSERT INTO kanban_tasks (title,description,status,priority,assignee,due_date,labels,position,created_by)
+                          VALUES (?,?,?,?,?,?,?,?,?)""",
+                       (d['title'], d.get('description',''), status, d.get('priority','media'),
+                        d.get('assignee',''), d.get('due_date'), d.get('labels',''), max_pos+1, session['user_id']))
+    conn.commit()
+    task_id = cur.lastrowid
+    conn.close()
+    return jsonify({'success': True, 'id': task_id})
+
+
+@app.route('/api/kanban/tasks/<int:task_id>', methods=['PUT'])
+@login_required
+def kanban_update(task_id):
+    d = request.json
+    conn = get_db()
+    task = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+    if not task:
+        conn.close()
+        return jsonify({'error': 'Tarefa não encontrada'}), 404
+
+    fields = {}
+    for key in ('title', 'description', 'priority', 'assignee', 'due_date', 'labels'):
+        if key in d:
+            fields[key] = d[key]
+    if 'status' in d:
+        status = d['status']
+        if status not in KANBAN_STATUSES:
+            return jsonify({'error': 'Status inválido'}), 400
+        fields['status'] = status
+        if 'position' not in d:
+            max_pos = conn.execute("SELECT COALESCE(MAX(position),-1) FROM kanban_tasks WHERE status=? AND id!=?",
+                                    (status, task_id)).fetchone()[0]
+            fields['position'] = max_pos + 1
+    if 'position' in d:
+        fields['position'] = d['position']
+
+    if fields:
+        fields['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        set_clause = ", ".join(f"{k}=?" for k in fields)
+        conn.execute(f"UPDATE kanban_tasks SET {set_clause} WHERE id=?", (*fields.values(), task_id))
+        conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/kanban/tasks/<int:task_id>', methods=['DELETE'])
+@login_required
+def kanban_delete(task_id):
+    conn = get_db()
+    conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/stats/category-distribution')
+@login_required
+def stats_category_distribution():
+    period = request.args.get('period', 'mes')
+    dfrom = request.args.get('from')
+    dto = request.args.get('to')
+    start, end, _, _ = _period_range(period, dfrom, dto)
+    conn = get_db()
+    stock = conn.execute("""SELECT category, SUM(quantity) AS total
+                             FROM products GROUP BY category ORDER BY total DESC""").fetchall()
+    moved = conn.execute("""
+        SELECT p.category AS category, SUM(m.quantity) AS total
+        FROM movements m JOIN products p ON m.product_id=p.id
+        WHERE date(m.created_at) BETWEEN ? AND ?
+        GROUP BY p.category ORDER BY total DESC
+    """, (start.isoformat(), end.isoformat())).fetchall()
+    conn.close()
+    return jsonify({
+        'start': start.isoformat(), 'end': end.isoformat(),
+        'stock': [dict(r) for r in stock],
+        'movement': [dict(r) for r in moved]
+    })
 
 
 @app.route('/api/reports/export')
