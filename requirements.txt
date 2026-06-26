@@ -1,11 +1,5 @@
-# Web framework
 Flask==3.0.3
 
-# PostgreSQL adapter (substitui sqlite3)
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
 
-# Utilitários de data/hora (já incluso na stdlib, mas útil como referência)
-# python-dateutil==2.9.0
-
-# Produção: servidor WSGI recomendado (opcional, mas necessário para deploy)
 gunicorn==22.0.0
