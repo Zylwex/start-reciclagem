@@ -1708,10 +1708,16 @@ async function init() {
   setDashDate();
   initTheme();
   startClock();
-  loadDashboard();
+  loadDashboard().catch(err=>{
+    console.error('Falha ao carregar o dashboard:', err);
+    revealDashboardCards(); // garante que os cards não fiquem presos em opacity:0
+  });
   loadNotifications();
   loadCategories();
   setInterval(loadNotifications, 30000);
+  // Watchdog: garante que nenhum card de dashboard fique invisível por
+  // mais de alguns segundos, mesmo em cenários inesperados.
+  setTimeout(revealDashboardCards, 4000);
 }
 
 function setDashDate() {
@@ -1990,58 +1996,75 @@ function goTo(page) {
 async function loadDashboard() {
   const data = await (await fetch('/api/stats/dashboard')).json();
 
-  // KPIs
-  animateCounter('s-total', data.total_products);
-  animateCounter('s-low', data.low_stock);
-  document.getElementById('s-kg').textContent = data.total_kg.toLocaleString('pt-BR');
-  animateCounter('s-mov', data.movements_today);
-  animateCounter('s-nomov', data.no_movement_products);
-  animateCounter('s-critical', data.critical_alerts);
+  try {
+    // KPIs
+    animateCounter('s-total', data.total_products);
+    animateCounter('s-low', data.low_stock);
+    document.getElementById('s-kg').textContent = Number(data.total_kg||0).toLocaleString('pt-BR');
+    animateCounter('s-mov', data.movements_today);
+    animateCounter('s-nomov', data.no_movement_products);
+    animateCounter('s-critical', data.critical_alerts);
 
-  // Low stock trend chip
-  const trendEl = document.getElementById('kpi-trend-low');
-  if(data.low_stock===0){
-    trendEl.className='kpi-trend good';trendEl.textContent='✓ Tudo normal';
-  } else {
-    trendEl.className='kpi-trend warn';
-    trendEl.textContent=`⚠ ${data.low_stock} atenção necessária`;
-  }
+    // Low stock trend chip
+    const trendEl = document.getElementById('kpi-trend-low');
+    if(data.low_stock===0){
+      trendEl.className='kpi-trend good';trendEl.textContent='✓ Tudo normal';
+    } else {
+      trendEl.className='kpi-trend warn';
+      trendEl.textContent=`⚠ ${data.low_stock} atenção necessária`;
+    }
 
-  // Update timestamps
-  const ts = 'Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  ['bi-upd-cat','bi-upd-top','bi-upd-health'].forEach(id=>{
-    document.getElementById(id).textContent = ts;
-  });
-
-  // Chart toolbars (configurar/editar/expandir/imprimir) — set up once before rendering
-  setupChartTools();
-
-  // Charts (each with its own period/type/unit state)
-  await renderCard('cat');
-  await renderCard('top');
-  await renderCard('health');
-  await renderCard('evo');
-
-  // Recent movements
-  buildRecentMov(data.recent_movements);
-
-  // Alerts
-  buildAlerts(await getProducts());
-
-  // Animate cards in
-  setTimeout(()=>{
-    document.querySelectorAll('.anim-ready').forEach((el,i)=>{
-      el.classList.remove('anim-ready');
-      el.style.animationDelay = el.style.getPropertyValue('--delay') || (i*0.06)+'s';
-      el.classList.add('anim-go');
+    // Update timestamps
+    const ts = 'Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    ['bi-upd-cat','bi-upd-top','bi-upd-health'].forEach(id=>{
+      document.getElementById(id).textContent = ts;
     });
-  },50);
 
-  // Load saved observations
-  ['cat','top','health','mov','alerts'].forEach(loadObsDisplay);
+    // Chart toolbars (configurar/editar/expandir/imprimir) — set up once before rendering
+    setupChartTools();
 
-  // Apply saved dashboard layout (ordem e widgets ocultos)
-  applyDashboardLayout();
+    // Charts (each with its own period/type/unit state).
+    // Cada gráfico é isolado em seu próprio try/catch: se um falhar
+    // (ex.: dado inesperado vindo da API), os demais continuam
+    // renderizando normalmente em vez de travar o dashboard inteiro.
+    const chartJobs = [
+      ['cat', () => renderCard('cat')],
+      ['top', () => renderCard('top')],
+      ['health', () => renderCard('health')],
+      ['evo', () => renderCard('evo')],
+    ];
+    for(const [key, job] of chartJobs){
+      try{ await job(); }
+      catch(err){ console.error('Falha ao renderizar gráfico "'+key+'":', err); }
+    }
+
+    // Recent movements
+    try{ buildRecentMov(data.recent_movements); }
+    catch(err){ console.error('Falha ao montar movimentações recentes:', err); }
+
+    // Alerts
+    try{ buildAlerts(await getProducts()); }
+    catch(err){ console.error('Falha ao montar alertas:', err); }
+
+    // Load saved observations
+    ['cat','top','health','mov','alerts'].forEach(loadObsDisplay);
+
+    // Apply saved dashboard layout (ordem e widgets ocultos)
+    applyDashboardLayout();
+  } finally {
+    // Revela os cards do dashboard SEMPRE, mesmo que algo acima tenha
+    // falhado — evita que os gráficos fiquem presos em opacity:0
+    // (problema de "gráficos invisíveis até entrar no modo de edição").
+    revealDashboardCards();
+  }
+}
+
+function revealDashboardCards(){
+  document.querySelectorAll('.anim-ready').forEach((el,i)=>{
+    el.classList.remove('anim-ready');
+    el.style.animationDelay = el.style.getPropertyValue('--delay') || (i*0.06)+'s';
+    el.classList.add('anim-go');
+  });
 }
 
 async function refreshDashboard(){
