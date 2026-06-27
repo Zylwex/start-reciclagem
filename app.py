@@ -1,9 +1,24 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask.json.provider import DefaultJSONProvider
 import psycopg2, psycopg2.extras, hashlib, os, json, csv, io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from decimal import Decimal
 from functools import wraps
 
+
+class CustomJSONProvider(DefaultJSONProvider):
+    """Serializa datetime, date e Decimal que o Flask padrão não suporta."""
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
 app = Flask(__name__)
+app.json_provider_class = CustomJSONProvider
+app.json = CustomJSONProvider(app)
 app.secret_key = 'start_reciclagem_secret_2024'
 TERMS_VERSION = '1.0'
 
