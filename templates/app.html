@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>START Reciclagem – Sistema de Gestão</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}">
+
+    </head>
+<body>
+<script>
+  (function(){
+  if(localStorage.getItem('start_theme')==='dark') document.body.classList.add('dark');
+})();
+</script>
+<div class="app">
+
+<!-- ═══ TOP NAVBAR ═══ -->
+<nav class="topnav">
+  <div class="topnav-logo">
+    <div class="logo-icon">
+  <svg width="38" height="38" viewBox="0 0 24 24" fill="none"
+  stroke="currentColor" stroke-width="1.8"
+  stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"></path>
+    <path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"></path>
+    <path d="m14 16-3 3 3 3"></path>
+    <path d="M8.293 13.596 7.196 9.5 3.1 10.598"></path>
+    <path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 12 3a1.784 1.784 0 0 1 1.555.91l3.622 6.272"></path>
+    <path d="m13.378 9.633 4.096 1.098 1.097-4.096"></path>
+  </svg>
+</div>
+    <div>
+      <div class="logo-text">START</div>
+      <div class="logo-sub">Reciclagem</div>
+    </div>
+  </div>
+  <button class="mobile-menu-btn" onclick="toggleSidebar()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+  <div class="topnav-nav" id="topnav-nav">
+    <div class="nav-item active" onclick="goTo('dashboard')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span> Dashboard</div>
+    <div class="nav-item" onclick="goTo('estoque')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span> Estoque</div>
+    <div class="nav-item" onclick="goTo('movimentacoes')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg></span> Movimentações</div>
+    <div class="nav-item" onclick="goTo('sku')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10v2a8 8 0 0 1-8 8H6a2 2 0 0 1-2-2v-6a8 8 0 0 1 8-8h2Z"/><path d="m12.59 2.59 7.41 7.41"/><circle cx="7.5" cy="7.5" r="1"/></svg></span> SKU e Etiquetas</div>
+    <div class="nav-item" onclick="goTo('relatorios')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span> Relatórios</div>
+    <div class="nav-item" onclick="goTo('feed')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg></span> Feed Interno</div>
+    <div class="nav-item" onclick="goTo('kanban')"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span> Kanban</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="header-actions" style="position:relative">
+    <div class="header-clock" id="header-clock">
+      <span class="hc-time" id="hc-time">--:--:--</span>
+      <span class="hc-date" id="hc-date">--/--/----</span>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
+    <button class="icon-btn" onclick="toggleNotifs()" title="Notificações">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot" id="notif-dot" style="display:none"></span>
+    </button>
+    <button class="avatar-btn" id="avatar-btn" onclick="toggleProfileMenu()"></button>
+    <div class="notif-panel" id="notif-panel">
+      <div class="notif-head">
+        <strong>Notificações</strong>
+        <button class="btn btn-sm btn-secondary" onclick="markAllRead()">Marcar lidas</button>
+      </div>
+      <div class="notif-list" id="notif-list"></div>
+    </div>
+    <div class="profile-dropdown" id="profile-dropdown">
+      <div class="profile-info">
+        <div class="pi-avatar" id="dd-avatar"></div>
+        <div class="pi-text">
+          <strong id="dd-name">–</strong>
+          <span id="dd-role">–</span>
+          <span id="dd-sector"></span>
+        </div>
+      </div>
+      <div class="dd-divider"></div>
+      <div class="dropdown-item" onclick="goTo('perfil');closeMenus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Meu Perfil</div>
+      <div class="dropdown-item" onclick="goTo('relatorios');closeMenus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Relatórios</div>
+      <div class="dropdown-item" onclick="goTo('perfil');closeMenus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg> Configurações</div>
+      <div class="dd-divider"></div>
+      <div class="dropdown-item" onclick="openLegalModal('terms');closeMenus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Termos de Uso</div>
+      <div class="dropdown-item" onclick="openLegalModal('privacy');closeMenus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Política de Privacidade</div>
+      <div class="dd-divider"></div>
+      <div class="dropdown-item danger" onclick="doLogout()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sair</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <header class="header">
+    <div class="header-title" id="header-title">Dashboard</div>
+    <div class="header-search">
+      <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input id="global-search" type="text" placeholder="Pesquisar produtos…" oninput="handleSearch(this.value)">
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ═══════════════════════════════════════
+         DASHBOARD — BI PREMIUM
+    ═══════════════════════════════════════ -->
+    <div class="page active" id="page-dashboard">
+
+      <!-- Top bar -->
+      <div class="dash-topbar">
+        <div>
+          <div class="page-title" id="dash-greeting">Carregando…</div>
+          <div class="page-sub">Visão geral do estoque em tempo real</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="dash-pill" id="dash-date"></div>
+          <button class="btn btn-outline btn-sm" onclick="refreshDashboard()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>Atualizar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openChartThemeModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 0 20 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5h-.5a2.5 2.5 0 0 1 0-5H17a3 3 0 0 0 3-3 9.94 9.94 0 0 0-8-9.5Z"/></svg>Tema dos Gráficos</button>
+          <button class="btn btn-secondary btn-sm" id="customize-btn" onclick="toggleCustomizeMode()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Personalizar Dashboard</button>
+          <button class="btn btn-primary" onclick="goTo('estoque')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo produto</button>
+        </div>
+      </div>
+
+      <!-- WIDGETS OCULTOS (modo personalizar) -->
+      <div class="hidden-widgets-tray" id="hidden-widgets-tray" style="display:none">
+        <div class="hidden-widgets-label">Widgets ocultos — clique para exibir novamente:</div>
+        <div class="hidden-widgets-list" id="hidden-widgets-list"></div>
+      </div>
+
+      <!-- EVOLUÇÃO TEMPORAL -->
+      <div class="bi-grid">
+        <div class="bi-card bi-span-12 anim-ready" style="--delay:.02s" id="bc-evo">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Evolução Temporal — Entradas x Saídas</div>
+              <div class="bi-card-sub" id="evo-sub">Movimentações no período selecionado</div>
+            </div>
+            <div class="bi-tools-wrap">
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="kpi-trend-up" id="evo-trend-in" style="display:none"></span>
+                <span class="kpi-trend-down" id="evo-trend-out" style="display:none"></span>
+              </div>
+              <select class="bi-period-select" id="period-evo" onchange="setCardPeriod('evo',this.value)">
+                <option value="semana">Semana</option>
+                <option value="mes" selected>Mês</option>
+                <option value="trimestre">Trimestre</option>
+                <option value="semestre">Semestre</option>
+                <option value="ano">Ano</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+            </div>
+          </div>
+          <div class="bi-chart-area">
+            <canvas id="chart-evo"></canvas>
+          </div>
+          <div class="bi-summary" id="summary-evo"></div>
+        </div>
+      </div>
+
+
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card kpi-green anim-ready" style="--delay:.05s">
+          <div class="kpi-icon-wrap kpi-icon-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Total de Produtos</div>
+            <div class="kpi-value" id="s-total">–</div>
+            <div class="kpi-sub">itens cadastrados</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orange anim-ready" style="--delay:.12s">
+          <div class="kpi-icon-wrap kpi-icon-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Estoque Baixo</div>
+            <div class="kpi-value" id="s-low">–</div>
+            <div class="kpi-trend" id="kpi-trend-low"></div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-blue anim-ready" style="--delay:.19s">
+          <div class="kpi-icon-wrap kpi-icon-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Total em Estoque</div>
+            <div class="kpi-value" id="s-kg">–</div>
+            <div class="kpi-sub">quilogramas</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-teal anim-ready" style="--delay:.26s">
+          <div class="kpi-icon-wrap kpi-icon-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Movimentações Hoje</div>
+            <div class="kpi-value" id="s-mov">–</div>
+            <div class="kpi-sub">registros do dia</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-purple anim-ready" style="--delay:.32s">
+          <div class="kpi-icon-wrap kpi-icon-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 7h18"/><path d="M8 3v4"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Sem Movimentação</div>
+            <div class="kpi-value" id="s-nomov">–</div>
+            <div class="kpi-sub">produtos parados</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-red anim-ready" style="--delay:.38s">
+          <div class="kpi-icon-wrap kpi-icon-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Alertas Críticos</div>
+            <div class="kpi-value" id="s-critical">–</div>
+            <div class="kpi-sub">itens zerados</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 1: Donut + Bar Top Produtos -->
+      <div class="bi-grid">
+
+        <!-- Donut: Distribuição por Categoria -->
+        <div class="bi-card bi-span-5 anim-ready" style="--delay:.18s" id="bc-cat">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Distribuição por Categoria</div>
+              <div class="bi-card-sub">
+                Composição do estoque
+                <span class="bi-trend-chip bi-trend-stable" id="bi-trend-cat" style="margin-left:6px">– categorias</span>
+              </div>
+            </div>
+            <div class="bi-tools-wrap">
+              <div class="bi-badge" id="bi-upd-cat">–</div>
+              <select class="bi-period-select" id="period-cat" onchange="setCardPeriod('cat',this.value)">
+                <option value="semana">Semana</option>
+                <option value="mes" selected>Mês</option>
+                <option value="trimestre">Trimestre</option>
+                <option value="semestre">Semestre</option>
+                <option value="ano">Ano</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+            </div>
+          </div>
+          <div class="bi-chart-area">
+            <canvas id="chart-cat"></canvas>
+          </div>
+          <div class="bi-summary" id="summary-cat"></div>
+          <!-- Observations -->
+          <div class="bi-obs-section">
+            <div class="bi-obs-toggle-btn" onclick="toggleObs('cat')">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Observações do gestor</span>
+              <span class="bi-obs-arrow" id="arr-cat">▾</span>
+            </div>
+            <div class="bi-obs-body" id="obs-cat">
+              <div class="bi-obs-inner">
+                <textarea class="bi-obs-textarea" id="obs-cat-txt"
+                  placeholder="Ex: A categoria Madeira está crescendo. Meta: manter Plástico acima de 100 kg."></textarea>
+                <div class="bi-obs-footer">
+                  <span id="obs-cat-meta"></span>
+                  <button class="bi-obs-save-btn" onclick="saveObs('cat')">Salvar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar: Top 8 Produtos -->
+        <div class="bi-card bi-span-7 anim-ready" style="--delay:.26s" id="bc-top">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Estoque por Produto — Top 8</div>
+              <div class="bi-card-sub">
+                Maiores volumes movimentados
+                <span class="bi-trend-chip" id="bi-trend-top" style="margin-left:6px">–</span>
+              </div>
+            </div>
+            <div class="bi-tools-wrap">
+              <div class="bi-badge" id="bi-upd-top">–</div>
+              <select class="bi-period-select" id="period-top" onchange="setCardPeriod('top',this.value)">
+                <option value="semana">Semana</option>
+                <option value="mes" selected>Mês</option>
+                <option value="trimestre">Trimestre</option>
+                <option value="semestre">Semestre</option>
+                <option value="ano">Ano</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+            </div>
+          </div>
+          <div class="bi-chart-area">
+            <canvas id="chart-top"></canvas>
+          </div>
+          <div class="bi-summary" id="summary-top"></div>
+          <div class="bi-obs-section">
+            <div class="bi-obs-toggle-btn" onclick="toggleObs('top')">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Observações do gestor</span>
+              <span class="bi-obs-arrow" id="arr-top">▾</span>
+            </div>
+            <div class="bi-obs-body" id="obs-top">
+              <div class="bi-obs-inner">
+                <textarea class="bi-obs-textarea" id="obs-top-txt"
+                  placeholder="Ex: Madeira lidera o estoque. Considerar reequilíbrio com Metal nas próximas entradas."></textarea>
+                <div class="bi-obs-footer">
+                  <span id="obs-top-meta"></span>
+                  <button class="bi-obs-save-btn" onclick="saveObs('top')">Salvar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Saúde + Movimentações + Alertas -->
+      <div class="bi-grid">
+
+        <!-- Saúde do Estoque (donut) -->
+        <div class="bi-card bi-span-4 anim-ready" style="--delay:.32s" id="bc-health">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Saúde do Estoque</div>
+              <div class="bi-card-sub">Situação atual dos itens</div>
+            </div>
+            <div class="bi-tools-wrap">
+              <div class="bi-badge" id="bi-upd-health">–</div>
+            </div>
+          </div>
+          <div class="bi-chart-area" style="min-height:170px">
+            <canvas id="chart-health"></canvas>
+          </div>
+          <div id="health-legend" style="margin-top:14px;display:flex;flex-direction:column;gap:6px"></div>
+          <div class="bi-summary" id="summary-health"></div>
+          <div class="bi-obs-section">
+            <div class="bi-obs-toggle-btn" onclick="toggleObs('health')">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Observações</span>
+              <span class="bi-obs-arrow" id="arr-health">▾</span>
+            </div>
+            <div class="bi-obs-body" id="obs-health">
+              <div class="bi-obs-inner">
+                <textarea class="bi-obs-textarea" id="obs-health-txt"
+                  placeholder="Ex: 1 item crítico identificado. Acionar fornecedor para reposição de Borracha."></textarea>
+                <div class="bi-obs-footer">
+                  <span id="obs-health-meta"></span>
+                  <button class="bi-obs-save-btn" onclick="saveObs('health')">Salvar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movimentações recentes -->
+        <div class="bi-card bi-span-5 anim-ready" style="--delay:.38s" id="bc-mov">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Últimas Movimentações</div>
+              <div class="bi-card-sub">Entradas e saídas recentes</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="goTo('movimentacoes')">Ver todas →</button>
+          </div>
+          <div id="recent-movements"></div>
+          <div class="bi-obs-section">
+            <div class="bi-obs-toggle-btn" onclick="toggleObs('mov')">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Observações</span>
+              <span class="bi-obs-arrow" id="arr-mov">▾</span>
+            </div>
+            <div class="bi-obs-body" id="obs-mov">
+              <div class="bi-obs-inner">
+                <textarea class="bi-obs-textarea" id="obs-mov-txt"
+                  placeholder="Ex: Volume de saída aumentou 20% nesta semana. Verificar demanda de produção."></textarea>
+                <div class="bi-obs-footer">
+                  <span id="obs-mov-meta"></span>
+                  <button class="bi-obs-save-btn" onclick="saveObs('mov')">Salvar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertas críticos -->
+        <div class="bi-card bi-span-3 anim-ready" style="--delay:.44s" id="bc-alerts">
+          <div class="bi-card-head">
+            <div>
+              <div class="bi-card-title">Alertas Críticos</div>
+              <div class="bi-card-sub">Itens abaixo do mínimo</div>
+            </div>
+          </div>
+          <div id="dash-alerts" style="flex:1"></div>
+          <div class="bi-obs-section">
+            <div class="bi-obs-toggle-btn" onclick="toggleObs('alerts')">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Plano de ação</span>
+              <span class="bi-obs-arrow" id="arr-alerts">▾</span>
+            </div>
+            <div class="bi-obs-body" id="obs-alerts">
+              <div class="bi-obs-inner">
+                <textarea class="bi-obs-textarea" id="obs-alerts-txt"
+                  placeholder="Ex: Solicitar 50 kg de Borracha ao fornecedor XYZ até sexta-feira."></textarea>
+                <div class="bi-obs-footer">
+                  <span id="obs-alerts-meta"></span>
+                  <button class="bi-obs-save-btn" onclick="saveObs('alerts')">Salvar nota</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ═══ ESTOQUE ═══ -->
+    <div class="page" id="page-estoque">
+      <div class="page-header">
+        <div><div class="page-title">Estoque</div>
+        <div class="page-sub">Gerencie produtos e materiais</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="position:relative;display:inline-block" id="export-dropdown-wrap">
+            <button class="btn btn-secondary" onclick="document.getElementById('export-menu').classList.toggle('show')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar ▾</button>
+            <div id="export-menu" style="display:none;position:absolute;right:0;top:38px;background:var(--white);border:1px solid var(--gray-200);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;min-width:170px;z-index:50">
+              <div class="dropdown-item" onclick="exportCSV();document.getElementById('export-menu').classList.remove('show')">📄 CSV</div>
+              <div class="dropdown-item" onclick="exportXLSX();document.getElementById('export-menu').classList.remove('show')">📊 Excel (.xlsx)</div>
+              <div class="dropdown-item" onclick="exportPDF();document.getElementById('export-menu').classList.remove('show')">📑 PDF</div>
+              <div class="dropdown-item" onclick="exportJSON();document.getElementById('export-menu').classList.remove('show')">🔧 JSON</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="openImportModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importar</button>
+          <button class="btn btn-primary" onclick="openProductModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Cadastrar Produto</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="form-group" style="flex:2;min-width:200px">
+          <label>Buscar</label>
+          <input id="prod-search" type="text" placeholder="Nome ou SKU…" oninput="loadProducts()">
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="prod-cat" onchange="loadProducts()">
+            <option value="">Todas</option>
+            <option>Papel</option><option>Plástico</option><option>Metal</option>
+            <option>Vidro</option><option>Madeira</option><option>Borracha</option><option>Eletrônico</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="prod-status" onchange="loadProducts()">
+            <option value="">Todos</option>
+            <option value="low">Estoque Baixo</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Produtos Cadastrados</span>
+          <span id="prod-count" style="font-size:12px;color:var(--gray-500)"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Produto</th><th>SKU</th><th>Categoria</th>
+              <th>Quantidade</th><th>Mínimo</th><th>Status</th>
+              <th>Localização</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="products-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MOVIMENTAÇÕES ═══ -->
+    <div class="page" id="page-movimentacoes">
+      <div class="page-header">
+        <div><div class="page-title">Movimentações</div>
+        <div class="page-sub">Histórico de entradas e saídas</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="openMovModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar Movimentação</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Histórico Completo</span></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Data/Hora</th><th>Produto</th><th>SKU</th><th>Tipo</th>
+              <th>Quantidade</th><th>Motivo</th><th>Usuário</th>
+            </tr></thead>
+            <tbody id="movements-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SKU & ETIQUETAS ═══ -->
+    <div class="page" id="page-sku">
+      <div class="page-header">
+        <div><div class="page-title">SKU & Etiquetas</div>
+        <div class="page-sub">Gerador de SKU e impressão de etiquetas</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+        <div class="table-wrap" style="padding:24px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10v2a8 8 0 0 1-8 8H6a2 2 0 0 1-2-2v-6a8 8 0 0 1 8-8h2Z"/><path d="m12.59 2.59 7.41 7.41"/><circle cx="7.5" cy="7.5" r="1"/></svg> Gerar SKU Automático</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="form-group"><label>Nome do Produto</label>
+              <input id="sku-name" type="text" placeholder="Nome do produto"></div>
+            <div class="form-group cat-combo-wrap"><label>Categoria</label>
+              <div class="cat-combo" id="sku-cat-combo">
+                <input id="sku-cat" type="text" autocomplete="off" placeholder="Buscar ou criar categoria…"
+                  oninput="catComboFilter('sku-cat')" onfocus="catComboOpen('sku-cat')">
+                <div class="cat-combo-list" id="sku-cat-list"></div>
+              </div>
+            </div>
+            <div class="form-group"><label>SKU Manual (opcional)</label>
+              <input id="sku-manual" type="text" placeholder="Ex: MET-005"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" onclick="generateSKU()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Gerar SKU</button>
+              <button class="btn btn-primary" onclick="previewLabel()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Prévia</button>
+            </div>
+          </div>
+          <div id="sku-result" style="margin-top:16px;padding:16px;background:var(--green-pale);
+            border-radius:8px;font-size:22px;font-weight:900;color:var(--green);
+            text-align:center;display:none;letter-spacing:4px;border:2px dashed var(--green-mid)"></div>
+        </div>
+        <div class="table-wrap" style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Prévia da Etiqueta</div>
+          <div id="label-preview-area" style="display:flex;flex-direction:column;align-items:center;gap:16px">
+            <div class="empty-state"><span class="es-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10v2a8 8 0 0 1-8 8H6a2 2 0 0 1-2-2v-6a8 8 0 0 1 8-8h2Z"/><path d="m12.59 2.59 7.41 7.41"/><circle cx="7.5" cy="7.5" r="1"/></svg></span><p>Gere um SKU para visualizar</p></div>
+          </div>
+          <button class="btn btn-primary" id="print-btn" onclick="printLabel()" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir Etiqueta</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FEED ═══ -->
+    <div class="page" id="page-feed">
+      <div class="page-header">
+        <div><div class="page-title">Feed Interno</div>
+        <div class="page-sub">Comunicação entre a equipe</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;flex-wrap:wrap">
+        <div>
+          <div class="post-card" style="margin-bottom:16px">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div class="post-avatar" id="my-avatar-feed"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+                <textarea id="post-text" placeholder="O que você quer compartilhar com a equipe?" rows="3"
+                  style="border-radius:12px;resize:none"></textarea>
+                <img id="post-image-preview" style="display:none;max-width:220px;border-radius:10px;border:1px solid var(--gray-100)">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <select id="post-type" style="font-size:12px;padding:6px 8px">
+                      <option value="post">📝 Publicação</option>
+                      <option value="comunicado">📢 Comunicado</option>
+                      <option value="aviso">⚠️ Aviso</option>
+                    </select>
+                    <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Imagem
+                      <input type="file" accept="image/*" style="display:none" onchange="handlePostImage(event)">
+                    </label>
+                  </div>
+                  <button class="btn btn-primary btn-sm" onclick="submitPost()">Publicar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feed" id="feed-list"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="table-wrap" style="padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px">⚠️ Alertas de Estoque</div>
+            <div id="stock-alerts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RELATÓRIOS ═══ -->
+    <div class="page" id="page-relatorios">
+      <div class="page-header">
+        <div><div class="page-title">Relatórios</div>
+        <div class="page-sub">Análises e exportações</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="exportCSV()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
+          <button class="btn btn-primary" onclick="printReport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir Relatório</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="form-group"><label>Período início</label><input id="rep-from" type="date"></div>
+        <div class="form-group"><label>Período fim</label><input id="rep-to" type="date"></div>
+        <div class="form-group"><label>Categoria</label>
+          <select id="rep-cat">
+            <option value="">Todas</option>
+            <option>Papel</option><option>Plástico</option><option>Metal</option>
+            <option>Vidro</option><option>Madeira</option><option>Borracha</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="align-self:flex-end" onclick="loadProducts()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Filtrar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px">
+        <div class="bi-card">
+          <div class="bi-card-head"><div><div class="bi-card-title">Distribuição por Categoria</div></div></div>
+          <div style="position:relative;min-height:220px"><canvas id="chart-pie"></canvas></div>
+        </div>
+        <div class="bi-card">
+          <div class="bi-card-head"><div><div class="bi-card-title">Estoque por Produto (Top 8)</div></div></div>
+          <div style="position:relative;min-height:220px"><canvas id="chart-bar"></canvas></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Inventário Completo</span>
+          <div id="rep-totals" style="font-size:13px;color:var(--gray-600)"></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Produto</th><th>SKU</th><th>Categoria</th>
+              <th>Quantidade (kg)</th><th>Mínimo (kg)</th><th>Status</th><th>Localização</th>
+            </tr></thead>
+            <tbody id="rep-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PERFIL ═══ -->
+    <div class="page" id="page-perfil">
+      <div class="page-header">
+        <div><div class="page-title">Meu Perfil</div></div>
+        <button class="btn btn-primary" onclick="openEditProfile()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Editar Perfil</button>
+      </div>
+      <div class="profile-card">
+        <div class="profile-avatar-big" id="profile-avatar-big"></div>
+        <div class="profile-details">
+          <div class="profile-name" id="prof-name">–</div>
+          <div class="profile-role-badge" id="prof-role">–</div>
+          <div class="profile-meta">
+            <div class="meta-item"><div class="meta-label">Usuário</div><div class="meta-value" id="prof-username">–</div></div>
+            <div class="meta-item"><div class="meta-label">E-mail</div><div class="meta-value" id="prof-email">–</div></div>
+            <div class="meta-item"><div class="meta-label">Idade</div><div class="meta-value" id="prof-age">–</div></div>
+            <div class="meta-item"><div class="meta-label">Setor</div><div class="meta-value" id="prof-sector">–</div></div>
+            <div class="meta-item"><div class="meta-label">Membro desde</div><div class="meta-value" id="prof-since">–</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ KANBAN ═══ -->
+    <div class="page" id="page-kanban">
+      <div class="page-header">
+        <div><div class="page-title">Kanban</div>
+        <div class="page-sub">Organização de tarefas da equipe</div></div>
+        <button class="btn btn-primary" onclick="openKanbanTaskModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova Tarefa</button>
+      </div>
+      <div class="kanban-board" id="kanban-board">
+        <div class="kanban-col" data-status="todo">
+          <div class="kanban-col-head"><span class="kanban-col-dot"></span><span>A Fazer</span><span class="kanban-col-count" id="kcount-todo">0</span></div>
+          <div class="kanban-col-progress"><div class="kanban-col-progress-bar" id="kprog-todo" style="width:0%"></div></div>
+          <div class="kanban-cards" id="kcol-todo"></div>
+          <button class="kanban-add-btn" onclick="openKanbanTaskModal('todo')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button>
+        </div>
+        <div class="kanban-col" data-status="doing">
+          <div class="kanban-col-head"><span class="kanban-col-dot"></span><span>Em Andamento</span><span class="kanban-col-count" id="kcount-doing">0</span></div>
+          <div class="kanban-col-progress"><div class="kanban-col-progress-bar" id="kprog-doing" style="width:0%"></div></div>
+          <div class="kanban-cards" id="kcol-doing"></div>
+          <button class="kanban-add-btn" onclick="openKanbanTaskModal('doing')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button>
+        </div>
+        <div class="kanban-col" data-status="review">
+          <div class="kanban-col-head"><span class="kanban-col-dot"></span><span>Em Revisão</span><span class="kanban-col-count" id="kcount-review">0</span></div>
+          <div class="kanban-col-progress"><div class="kanban-col-progress-bar" id="kprog-review" style="width:0%"></div></div>
+          <div class="kanban-cards" id="kcol-review"></div>
+          <button class="kanban-add-btn" onclick="openKanbanTaskModal('review')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button>
+        </div>
+        <div class="kanban-col" data-status="done">
+          <div class="kanban-col-head"><span class="kanban-col-dot"></span><span>Concluído</span><span class="kanban-col-count" id="kcount-done">0</span></div>
+          <div class="kanban-col-progress"><div class="kanban-col-progress-bar" id="kprog-done" style="width:0%"></div></div>
+          <div class="kanban-cards" id="kcol-done"></div>
+          <button class="kanban-add-btn" onclick="openKanbanTaskModal('done')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL: TERMS / PRIVACY -->
+<div class="modal-overlay" id="modal-legal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="legal-title">Termos de Uso</div>
+      <button class="modal-close" onclick="closeModal('modal-legal')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="legal-body" style="font-size:13px;color:var(--gray-700);line-height:1.7;background:var(--gray-50);border-radius:8px;padding:16px;max-height:400px;overflow-y:auto"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="closeModal('modal-legal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: EXPANDIR GRÁFICO -->
+<div class="modal-overlay modal-expand" id="modal-chart-expand">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="expand-title">Gráfico</div>
+      <button class="modal-close" onclick="closeModal('modal-chart-expand')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="position:relative;height:60vh">
+      <canvas id="chart-expand-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR DADOS DO GRÁFICO -->
+<div class="modal-overlay" id="modal-edit-data">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <div class="modal-title" id="edit-data-title">Editar Dados</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-data')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="edit-data-body" style="max-height:50vh;overflow:auto"></div>
+    <div class="modal-actions" style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-edit-data')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveChartEdits()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPORTAR PRODUTOS -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div class="modal-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importar Produtos</div>
+      <button class="modal-close" onclick="closeModal('modal-import')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Arquivo (.xlsx, .csv ou .json)</label>
+      <input type="file" id="import-file" accept=".xlsx,.csv,.json" onchange="handleImportFile(event)">
+    </div>
+    <div id="import-preview" style="max-height:45vh;overflow:auto"></div>
+    <div class="modal-actions" style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="import-confirm-btn" onclick="confirmImport()" disabled>Confirmar Importação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TEMA DOS GRÁFICOS -->
+<div class="modal-overlay" id="modal-chart-theme">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 0 20 1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5h-.5a2.5 2.5 0 0 1 0-5H17a3 3 0 0 0 3-3 9.94 9.94 0 0 0-8-9.5Z"/></svg> Tema dos Gráficos</div>
+      <button class="modal-close" onclick="closeModal('modal-chart-theme')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <p style="font-size:12.5px;color:var(--gray-500);margin-bottom:14px">
+      Escolha a paleta de cores usada em todos os gráficos do sistema. A preferência fica salva neste navegador.
+    </p>
+    <div class="chart-theme-list" id="chart-theme-list"></div>
+    <div class="chart-theme-custom-colors" id="chart-theme-custom-colors" style="display:none"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="closeModal('modal-chart-theme')">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TAREFA KANBAN -->
+<div class="modal-overlay" id="modal-kanban-task">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title" id="kanban-modal-title">Nova Tarefa</div>
+      <button class="modal-close" onclick="closeModal('modal-kanban-task')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Título *</label>
+        <input type="text" id="kt-title" placeholder="Ex: Conferir estoque do setor B">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Descrição</label>
+        <textarea id="kt-desc" rows="3" placeholder="Detalhes da tarefa"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Prioridade</label>
+        <select id="kt-priority">
+          <option value="baixa">Baixa</option>
+          <option value="media" selected>Média</option>
+          <option value="alta">Alta</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsável</label>
+        <input type="text" id="kt-assignee" placeholder="Nome do responsável">
+      </div>
+      <div class="form-group">
+        <label>Data limite</label>
+        <input type="date" id="kt-due">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Etiquetas</label>
+        <div class="kanban-label-picker" id="kt-labels">
+          <button type="button" class="kanban-label-opt" data-label="green" title="Verde"><span class="kanban-label kanban-label-green"></span></button>
+          <button type="button" class="kanban-label-opt" data-label="blue" title="Azul"><span class="kanban-label kanban-label-blue"></span></button>
+          <button type="button" class="kanban-label-opt" data-label="orange" title="Laranja"><span class="kanban-label kanban-label-orange"></span></button>
+          <button type="button" class="kanban-label-opt" data-label="red" title="Vermelho"><span class="kanban-label kanban-label-red"></span></button>
+          <button type="button" class="kanban-label-opt" data-label="purple" title="Roxo"><span class="kanban-label kanban-label-purple"></span></button>
+          <button type="button" class="kanban-label-opt" data-label="gray" title="Cinza"><span class="kanban-label kanban-label-gray"></span></button>
+        </div>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Status</label>
+        <select id="kt-status">
+          <option value="todo">A Fazer</option>
+          <option value="doing">Em Andamento</option>
+          <option value="review">Em Revisão</option>
+          <option value="done">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-danger" id="kt-delete-btn" style="display:none" onclick="deleteKanbanTask()">Excluir</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-kanban-task')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveKanbanTask()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VISUALIZAR IMPRESSÃO -->
+<div class="modal-overlay print-preview-modal" id="modal-print">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Visualizar Impressão</div>
+      <button class="modal-close" onclick="closeModal('modal-print')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:160px">
+        <label>Orientação</label>
+        <select id="pp-orientation" onchange="renderPrintPreview()">
+          <option value="portrait">Retrato</option>
+          <option value="landscape">Paisagem</option>
+        </select>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn btn-secondary" onclick="exportPreviewPDF()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button>
+      <button class="btn btn-secondary" onclick="exportPreviewExcel()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Excel</button>
+      <button class="btn btn-secondary" onclick="exportPreviewCSV()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
+      <button class="btn btn-secondary" onclick="exportPreviewJSON()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>JSON</button>
+      <button class="btn btn-primary" onclick="doPrintNow()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
+    </div>
+    <div class="print-preview-frame" id="print-preview-frame"></div>
+  </div>
+</div>
+
+<!-- MODAL: PRODUCT -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="prod-modal-title">Cadastrar Produto</div>
+      <button class="modal-close" onclick="closeModal('modal-product')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Nome do Produto *</label><input id="p-name" type="text" placeholder="Ex: Papelão"></div>
+      <div class="form-group"><label>SKU *</label>
+        <div style="display:flex;gap:8px">
+          <input id="p-sku" type="text" placeholder="PAP-001" style="flex:1">
+          <button class="btn btn-secondary btn-sm" onclick="autoSKU()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
+        </div>
+      </div>
+      <div class="form-group cat-combo-wrap">
+        <label>Categoria</label>
+        <div class="cat-combo" id="p-cat-combo">
+          <input id="p-cat" type="text" autocomplete="off" placeholder="Buscar ou criar categoria…"
+            oninput="catComboFilter('p-cat')" onfocus="catComboOpen('p-cat')">
+          <div class="cat-combo-list" id="p-cat-list"></div>
+        </div>
+      </div>
+      <div class="form-group"><label>Quantidade (kg)</label><input id="p-qty" type="number" step="0.1" min="0" placeholder="0.0"></div>
+      <div class="form-group"><label>Qtd. Mínima (kg)</label><input id="p-min" type="number" step="0.1" min="0" placeholder="0.0"></div>
+      <div class="form-group"><label>Localização</label><input id="p-loc" type="text" placeholder="Ex: Galpão A"></div>
+      <div class="form-group full"><label>Observações</label>
+        <textarea id="p-obs" placeholder="Observações sobre o produto…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-product')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Salvar Produto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MOVEMENT -->
+<div class="modal-overlay" id="modal-movement">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <div class="modal-title">Registrar Movimentação</div>
+      <button class="modal-close" onclick="closeModal('modal-movement')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group"><label>Produto *</label><select id="m-prod"></select></div>
+      <div class="form-group"><label>Tipo *</label>
+        <select id="m-type">
+          <option value="entrada">✅ Entrada</option>
+          <option value="saida">🔻 Saída</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Quantidade (kg) *</label>
+        <input id="m-qty" type="number" step="0.1" min="0.1" placeholder="0.0">
+      </div>
+      <div class="form-group"><label>Motivo / Observação</label>
+        <input id="m-reason" type="text" placeholder="Ex: Compra fornecedor / Produção">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-movement')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMovement()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT PROFILE -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title">Editar Perfil</div>
+      <button class="modal-close" onclick="closeModal('modal-profile')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group"><label>Nome Completo</label><input id="ep-name" type="text"></div>
+      <div class="form-group"><label>Idade</label><input id="ep-age" type="number" min="16" max="99"></div>
+      <div class="form-group"><label>Cargo</label>
+        <select id="ep-role">
+          <option>Funcionário</option><option>Estoquista</option>
+          <option>Supervisor</option><option>Gerente</option><option>Administrador</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Setor</label><input id="ep-sector" type="text"></div>
+      <div class="form-group"><label>Avatar (emoji ou URL)</label>
+        <input id="ep-avatar" type="text" placeholder="Ex: 👩‍🔧 ou https://…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-profile')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: OBS HISTORY -->
+<div class="modal-overlay" id="modal-obs-history">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title">Histórico de Observações</div>
+      <button class="modal-close" onclick="closeModal('modal-obs-history')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="obs-history-list" style="display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>
